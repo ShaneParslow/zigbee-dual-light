@@ -38,7 +38,7 @@ static void bdb_start_top_level_commissioning_cb(uint8_t mode_mask)
     ESP_RETURN_ON_FALSE(esp_zb_bdb_start_top_level_commissioning(mode_mask) == ESP_OK, , TAG, "Failed to start Zigbee commissioning");
 }
 
-/* Callback for post-stack-init handlers and some protocol stuff */
+/* Callback from zb stack for post-init handlers and some protocol stuff */
 void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
 {
     uint32_t *p_sg_p = signal_struct->p_app_signal;
@@ -93,7 +93,7 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
 }
 
 /* Build basic cluster */
-esp_err_t esp_add_ep_basic_manufacturer_info(esp_zb_ep_list_t *ep_list, uint8_t endpoint_id)
+static esp_err_t esp_add_ep_basic_manufacturer_info(esp_zb_ep_list_t *ep_list, uint8_t endpoint_id)
 {
     esp_err_t ret = ESP_OK;
     esp_zb_cluster_list_t *cluster_list = NULL;
@@ -108,7 +108,7 @@ esp_err_t esp_add_ep_basic_manufacturer_info(esp_zb_ep_list_t *ep_list, uint8_t 
     return ret;
 }
 
-/* Main task: zigbee protocol init, cluster init, endpoint init */
+/* Main task: zigbee protocol init, cluster init, endpoint init, then give control to zb stack */
 static void esp_zb_task(void *pvParameters)
 {
     /* initialize Zigbee stack */
