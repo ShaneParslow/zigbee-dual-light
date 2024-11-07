@@ -1,12 +1,14 @@
 #include "freertos/FreeRTOS.h"
 
 /* Espressif */
+#include "esp_zigbee_core.h"
 #include "esp_check.h"
 #include "nvs_flash.h"
 #include "ha/esp_zigbee_ha_standard.h"
 
 /* Local */
-#include "esp_zb_light.h"
+#include "esp_zb_light.h" // let's try to remove this
+#include "ota.h"
 #include "lighting.h"
 
 static const char *TAG = "ZB_DUAL_LIGHT";
@@ -18,7 +20,7 @@ static esp_err_t zb_attribute_handler(const esp_zb_zcl_set_attr_value_message_t 
     return ret;
 }
 
-/* Main callback for network messages: can add in ota stuff and more here */
+/* Main callback for network messages */
 static esp_err_t zb_action_handler(esp_zb_core_action_callback_id_t callback_id, const void *message)
 {
     esp_err_t ret = ESP_OK;
@@ -26,6 +28,15 @@ static esp_err_t zb_action_handler(esp_zb_core_action_callback_id_t callback_id,
     case ESP_ZB_CORE_SET_ATTR_VALUE_CB_ID:
         ret = zb_attribute_handler((esp_zb_zcl_set_attr_value_message_t *)message);
         break;
+
+    /* OTA */
+    case ESP_ZB_CORE_OTA_UPGRADE_VALUE_CB_ID:
+        ret = zb_ota_upgrade_status_handler(*(esp_zb_zcl_ota_upgrade_value_message_t *)message);
+        break;
+    case ESP_ZB_CORE_OTA_UPGRADE_QUERY_IMAGE_RESP_CB_ID:
+        ret = zb_ota_upgrade_query_image_resp_handler(*(esp_zb_zcl_ota_upgrade_query_image_resp_message_t *)message);
+        break;
+
     default:
         ESP_LOGW(TAG, "Receive Zigbee action(0x%x) callback", callback_id);
         break;
