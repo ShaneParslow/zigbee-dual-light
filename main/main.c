@@ -1,7 +1,6 @@
 #include "freertos/FreeRTOS.h"
 
 /* Espressif */
-#include "esp_zigbee_core.h"
 #include "esp_check.h"
 #include "nvs_flash.h"
 #include "ha/esp_zigbee_ha_standard.h"
