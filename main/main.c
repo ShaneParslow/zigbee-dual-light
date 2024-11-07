@@ -6,10 +6,20 @@
 #include "ha/esp_zigbee_ha_standard.h"
 
 /* Local */
-#include "esp_zb_light.h"
 #include "lighting.h"
 
 static const char *TAG = "ZB_DUAL_LIGHT";
+
+/* Basic manufacturer information */
+#define ESP_MANUFACTURER_NAME "\x09""ESPRESSIF"      /* Customized manufacturer name */
+#define ESP_MODEL_IDENTIFIER "\x07"CONFIG_IDF_TARGET /* Customized model identifier */
+
+/* Zigbee configuration */
+#define MAX_CHILDREN                      10                                    /* the max amount of connected devices */
+#define INSTALLCODE_POLICY_ENABLE         false                                 /* enable the install code policy for security */
+#define HA_COLOR_DIMMABLE_LIGHT_ENDPOINT  10                                    /* esp light switch device endpoint */
+#define ESP_ZB_PRIMARY_CHANNEL_MASK       ESP_ZB_TRANSCEIVER_ALL_CHANNELS_MASK  /* Zigbee primary channel mask use in the example */
+
 
 /* Attribute change handler, whatever that means. Gets messages for specific endpoints. */
 static esp_err_t zb_attribute_handler(const esp_zb_zcl_set_attr_value_message_t *message)
@@ -111,15 +121,30 @@ static esp_err_t esp_add_ep_basic_manufacturer_info(esp_zb_ep_list_t *ep_list, u
 /* Main task: zigbee protocol init, cluster init, endpoint init, then give control to zb stack */
 static void esp_zb_task(void *pvParameters)
 {
-    /* initialize Zigbee stack */
-    esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
+    /* Some stack init */
+    esp_zb_cfg_t zb_nwk_cfg = 
+        {
+            .esp_zb_role = ESP_ZB_DEVICE_TYPE_ROUTER,
+            .install_code_policy = INSTALLCODE_POLICY_ENABLE,
+            .nwk_cfg.zczr_cfg = {
+                .max_children = MAX_CHILDREN,
+            }
+        };
     esp_zb_init(&zb_nwk_cfg);
-    esp_zb_color_dimmable_light_cfg_t light_cfg = ESP_ZB_DEFAULT_COLOR_DIMMABLE_LIGHT_CONFIG();
-    esp_zb_ep_list_t *esp_zb_color_dimmable_light_ep = esp_zb_color_dimmable_light_ep_create(HA_COLOR_DIMMABLE_LIGHT_ENDPOINT, &light_cfg);
 
-    esp_add_ep_basic_manufacturer_info(esp_zb_color_dimmable_light_ep, HA_COLOR_DIMMABLE_LIGHT_ENDPOINT);
-    esp_zb_device_register(esp_zb_color_dimmable_light_ep);
+    /* Make HA specific dimmable light endpoint */
+    esp_zb_color_dimmable_light_cfg_t light_cfg = ESP_ZB_DEFAULT_COLOR_DIMMABLE_LIGHT_CONFIG();
+    esp_zb_ep_list_t* endpoint_list = esp_zb_color_dimmable_light_ep_create(HA_COLOR_DIMMABLE_LIGHT_ENDPOINT, &light_cfg);
+    /* Add manufacturer info to the 'basic' cluster of this endpoint */
+    esp_add_ep_basic_manufacturer_info(endpoint_list, HA_COLOR_DIMMABLE_LIGHT_ENDPOINT);
+
+    /* Register all endpoints. This takes a list, but right now we just have one endpoint. */
+    esp_zb_device_register(endpoint_list);
+
+    /* Action handler for actually handling certain incoming messages? What determines which things are static and which are dynamic through this handler? */
     esp_zb_core_action_handler_register(zb_action_handler);
+
+    /* Finish off the stack init */
     esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
     ESP_ERROR_CHECK(esp_zb_start(false));
     esp_zb_stack_main_loop();
@@ -129,8 +154,8 @@ static void esp_zb_task(void *pvParameters)
 void app_main(void)
 {
     esp_zb_platform_config_t config = {
-        .radio_config = ESP_ZB_DEFAULT_RADIO_CONFIG(),
-        .host_config = ESP_ZB_DEFAULT_HOST_CONFIG(),
+        .radio_config = { .radio_mode = ZB_RADIO_MODE_NATIVE },
+        .host_config  = { .host_connection_mode = ZB_HOST_CONNECTION_MODE_NONE },
     };
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
