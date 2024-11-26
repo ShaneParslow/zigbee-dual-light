@@ -7,21 +7,19 @@
 
 /* Local */
 #include "lighting.h"
+#include "endpoint.h"
 
 static const char *TAG = "ZB_DUAL_LIGHT";
-
-/* Basic manufacturer information */
-#define ESP_MANUFACTURER_NAME "\x09""ESPRESSIF"      /* Customized manufacturer name */
-#define ESP_MODEL_IDENTIFIER "\x07"CONFIG_IDF_TARGET /* Customized model identifier */
 
 /* Zigbee configuration */
 #define MAX_CHILDREN                      10                                    /* the max amount of connected devices */
 #define INSTALLCODE_POLICY_ENABLE         false                                 /* enable the install code policy for security */
-#define HA_COLOR_DIMMABLE_LIGHT_ENDPOINT  10                                    /* esp light switch device endpoint */
 #define ESP_ZB_PRIMARY_CHANNEL_MASK       ESP_ZB_TRANSCEIVER_ALL_CHANNELS_MASK  /* Zigbee primary channel mask use in the example */
 
 
 /* Attribute change handler, whatever that means. Gets messages for specific endpoints. */
+// The default esp dimmable light structure gives us Basic, Identify, Groups, Scenes, OnOff (?)
+// Ikea light has Basic, Color, Diagnostic, GreenPowerProxy, Groups, Identify, LevelControl, LightLink, ManufacturerSpecific, OnOff, Ota, Scenes
 static esp_err_t zb_attribute_handler(const esp_zb_zcl_set_attr_value_message_t *message)
 {
     esp_err_t ret = ESP_OK;
@@ -35,13 +33,13 @@ static esp_err_t zb_attribute_handler(const esp_zb_zcl_set_attr_value_message_t 
     ESP_LOGI(TAG, "Received message: endpoint(%d), cluster(0x%x), attribute(0x%x), data size(%d)", message->info.dst_endpoint, message->info.cluster,
              message->attribute.id, message->attribute.data.size);
 
-    if (message->info.dst_endpoint == HA_COLOR_DIMMABLE_LIGHT_ENDPOINT) {
+    if (message->info.dst_endpoint == WHITE_LIGHT_ENDPOINT) {
         switch (message->info.cluster) {
         case ESP_ZB_ZCL_CLUSTER_ID_ON_OFF:
             if (message->attribute.id == ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_BOOL) {
                 light_state = message->attribute.data.value ? *(bool *)message->attribute.data.value : light_state;
                 ESP_LOGI(TAG, "Light sets to %s", light_state ? "On" : "Off");
-                light_driver_set_power(light_state);
+                white_light_set_power(light_state);
             } else {
                 ESP_LOGW(TAG, "On/Off cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
             }
@@ -63,12 +61,12 @@ static esp_err_t zb_attribute_handler(const esp_zb_zcl_set_attr_value_message_t 
             } else {
                 ESP_LOGW(TAG, "Color control cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
             }
-            light_driver_set_color_xy(light_color_x, light_color_y);
+            //light_driver_set_color_xy(light_color_x, light_color_y);
             break;
         case ESP_ZB_ZCL_CLUSTER_ID_LEVEL_CONTROL:
             if (message->attribute.id == ESP_ZB_ZCL_ATTR_LEVEL_CONTROL_CURRENT_LEVEL_ID && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U8) {
                 light_level = message->attribute.data.value ? *(uint8_t *)message->attribute.data.value : light_level;
-                light_driver_set_level((uint8_t)light_level);
+                //light_driver_set_level((uint8_t)light_level);
                 ESP_LOGI(TAG, "Light level changes to %d", light_level);
             } else {
                 ESP_LOGW(TAG, "Level Control cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
@@ -186,10 +184,19 @@ static void esp_zb_task(void *pvParameters)
     esp_zb_init(&zb_nwk_cfg);
 
     /* Make HA specific dimmable light endpoint */
-    esp_zb_color_dimmable_light_cfg_t light_cfg = ESP_ZB_DEFAULT_COLOR_DIMMABLE_LIGHT_CONFIG();
-    esp_zb_ep_list_t* endpoint_list = esp_zb_color_dimmable_light_ep_create(HA_COLOR_DIMMABLE_LIGHT_ENDPOINT, &light_cfg);
+    // TODO: 2 endpoints, fine tune the clusters for our specific purposes, put together the clusters ourselves.
+    
+    //esp_zb_ep_list_t* endpoint_list = esp_zb_color_dimmable_light_ep_create(HA_WHITE_LIGHT_ENDPOINT, &light_cfg);
+
+    esp_zb_ep_list_t* endpoint_list = esp_zb_ep_list_create();
+
+    /* White light endpoint init */
+    esp_zb_cluster_list_t* white_cluster_list = esp_zb_color_dimmable_light_clusters_create(&white_light_cfg);
+    esp_zb_ep_list_add_ep(endpoint_list, white_cluster_list, white_ep_cfg);
+
     /* Add manufacturer info to the 'basic' cluster of this endpoint */
-    esp_add_ep_basic_manufacturer_info(endpoint_list, HA_COLOR_DIMMABLE_LIGHT_ENDPOINT);
+    // TODO: keep?
+    //esp_add_ep_basic_manufacturer_info(endpoint_list, HA_WHITE_LIGHT_ENDPOINT);
 
     /* Register all endpoints. This takes a list, but right now we just have one endpoint. */
     esp_zb_device_register(endpoint_list);

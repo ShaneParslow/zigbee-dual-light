@@ -10,4 +10,6 @@ enum channel {
     NUM_LIGHTS,
 };
 
+void white_light_set_power(bool state);
+void rgbw_light_set_power(bool state);
 int lighting_init();

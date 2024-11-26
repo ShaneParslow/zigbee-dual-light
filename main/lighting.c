@@ -43,6 +43,22 @@ static void all_channels_init()
     }
 }
 
+void white_light_set_power(bool state)
+{
+    for (enum channel chnl = MAIN_COOL; chnl <= MAIN_WARM; chnl++) {
+        ledc_set_duty(LEDC_LOW_SPEED_MODE, chnl, 63 * state);
+        ledc_update_duty(LEDC_LOW_SPEED_MODE, chnl);
+    }
+}
+
+void rgbw_light_set_power(bool state)
+{
+    for (enum channel chnl = AUX_W; chnl < AUX_B; chnl++) {
+        ledc_set_duty(LEDC_LOW_SPEED_MODE, chnl, 63 * state);
+        ledc_update_duty(LEDC_LOW_SPEED_MODE, chnl);
+    }
+}
+
 int lighting_init()
 {
     timer_init();
