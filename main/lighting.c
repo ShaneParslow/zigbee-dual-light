@@ -73,6 +73,25 @@ void rgbw_set_power(unsigned char state)
     }
 }
 
+void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
+{
+
+    if(message->attribute.data.value) {
+        bool on_off = *(bool *)message->attribute.data.value;
+        if(on_off == false) {
+            white_set_power(0);
+        }
+        else {
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, MAIN_COOL, cool_level);
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, MAIN_WARM, warm_level);
+
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, MAIN_COOL);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, MAIN_WARM);
+        }
+        ESP_LOGI(TAG, "White set to %s", on_off ? "On" : "Off");
+    }
+}
+
 void set_rgbw_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
 {
 
@@ -90,7 +109,7 @@ void set_rgbw_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
             ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_G);
             ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_B);
         }
-        ESP_LOGI(TAG, "Light sets to %s", on_off ? "On" : "Off");
+        ESP_LOGI(TAG, "RGBW set to %s", on_off ? "On" : "Off");
     }
 }
 
