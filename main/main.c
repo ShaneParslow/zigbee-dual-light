@@ -216,8 +216,12 @@ static void esp_zb_task(void *pvParameters)
     esp_zb_cluster_list_t* white_cluster_list = esp_zb_color_dimmable_light_clusters_create(&white_cluster_cfg);
     esp_zb_ep_list_add_ep(endpoint_list, white_cluster_list, white_endpoint_cfg);
 
+    esp_zb_cluster_list_t* rgbw_cluster_list = esp_zb_color_dimmable_light_clusters_create(&rgbw_cluster_cfg);
+    esp_zb_ep_list_add_ep(endpoint_list, rgbw_cluster_list, rgbw_endpoint_cfg);
+
     /* Add manufacturer info to the 'basic' cluster of this endpoint */
     basic_cluster_init_attributes(endpoint_list, WHITE_ENDPOINT);
+    basic_cluster_init_attributes(endpoint_list, RGBW_ENDPOINT);
 
     /* Register all endpoints. This takes a list, but right now we just have one endpoint. */
     esp_zb_device_register(endpoint_list);
