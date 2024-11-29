@@ -17,8 +17,8 @@ static void timer_init()
 	
 	pwm_conf.speed_mode = LEDC_LOW_SPEED_MODE;
 	pwm_conf.timer_num = 0;
-	pwm_conf.freq_hz = 1250000;
-	pwm_conf.duty_resolution = LEDC_TIMER_6_BIT; // TODO: lower frequency, higher res?
+	pwm_conf.freq_hz = 300000;
+	pwm_conf.duty_resolution = LEDC_TIMER_8_BIT;
 	pwm_conf.clk_cfg = LEDC_USE_PLL_DIV_CLK;
 
     ledc_timer_config(&pwm_conf);
