@@ -3,17 +3,17 @@
 #define ESP_MODEL_IDENTIFIER "\x07"CONFIG_IDF_TARGET /* Customized model identifier */
 
 /* Arbitrary endpoint ids*/
-#define WHITE_LIGHT_ENDPOINT              1
-#define RGBW_LIGHT_ENDPOINT               2
+#define WHITE_ENDPOINT              1
+#define RGBW_ENDPOINT               2
 
-/* Stuff not included in the esp zcl defs */
+/* Stuff from the spec not included in the esp zcl defs */
 #define COLOR_TEMP_SUPPORTED    1 << 4
 #define COLOR_MODE_MIREDS       0x02
 
 /* White light endpoint config (id, profile, device)*/
-esp_zb_endpoint_config_t white_ep_cfg =
+esp_zb_endpoint_config_t white_endpoint_cfg =
 {
-    .endpoint = WHITE_LIGHT_ENDPOINT,
+    .endpoint = WHITE_ENDPOINT,
     // This is a legacy property? Maybe? HA should be fine....
     // https://docs.espressif.com/projects/esp-zigbee-sdk/en/latest/esp32/api-reference/zcl/esp_zigbee_zcl_common.html#_CPPv422esp_zb_af_profile_id_t
     // https://www.silabs.com/documents/public/application-notes/an1117-migrating-zigbee-profiles-to-z30.pdf
@@ -30,7 +30,7 @@ esp_zb_endpoint_config_t white_ep_cfg =
 
 /* White light cluster config */
 // TODO: verify
-esp_zb_color_dimmable_light_cfg_t white_light_cfg =
+esp_zb_color_dimmable_light_cfg_t white_cluster_cfg =
 {
     .basic_cfg =
         {
