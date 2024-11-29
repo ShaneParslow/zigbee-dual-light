@@ -10,6 +10,7 @@ enum channel {
     NUM_LIGHTS,
 };
 
-void white_light_set_power(bool state);
-void rgbw_light_set_power(bool state);
+void white_set_power(unsigned char state);
+void rgbw_set_power(unsigned char state);
+void set_rgbw_on_off(const esp_zb_zcl_set_attr_value_message_t *message);
 int lighting_init();

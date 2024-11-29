@@ -1,6 +1,9 @@
+#include "ha/esp_zigbee_ha_standard.h"
 #include "driver/ledc.h"
 
 #include "lighting.h"
+
+static const char *TAG = "ZB_DUAL_LIGHT_LIGHTING_C";
 
 const static gpio_num_t pin_map[NUM_LIGHTS] = {
     [MAIN_COOL] = GPIO_NUM_3,
@@ -10,6 +13,17 @@ const static gpio_num_t pin_map[NUM_LIGHTS] = {
     [AUX_G]     = GPIO_NUM_5,
     [AUX_B]     = GPIO_NUM_4,
 };
+
+/* Track level, even when the light gets turned off so that we can restore it.
+    Technically, we are supposed to be using the StartupOnOff attribute but I
+    don't think home assistant is going to care if this implementation is
+    broken, based on what messages it's been sending. I havent seen anything
+    addressed to the StartupOnOff attribute. Still, broken implementation. */
+static unsigned char cool_level =  0xfe;
+static unsigned char warm_level =  0xfe;
+static unsigned char r_level    =  0xfe;
+static unsigned char g_level    =  0xfe;
+static unsigned char b_level    =  0xfe;
 
 static void timer_init()
 {
@@ -31,7 +45,7 @@ static void channel_init(enum channel chnl)
 	chnl_conf.gpio_num = pin_map[chnl];
 	chnl_conf.channel = chnl;
 	chnl_conf.timer_sel = 0;
-	chnl_conf.duty = 32; //todo
+	chnl_conf.duty = 32; // A nice dim value to show that we've started but nothing has actually set the level
 
 	ledc_channel_config(&chnl_conf);
 }
@@ -43,19 +57,36 @@ static void all_channels_init()
     }
 }
 
-void white_light_set_power(bool state)
+void white_set_power(unsigned char state)
 {
     for (enum channel chnl = MAIN_COOL; chnl <= MAIN_WARM; chnl++) {
-        ledc_set_duty(LEDC_LOW_SPEED_MODE, chnl, 255 * state);
+        ledc_set_duty(LEDC_LOW_SPEED_MODE, chnl, state);
         ledc_update_duty(LEDC_LOW_SPEED_MODE, chnl);
     }
 }
 
-void rgbw_light_set_power(bool state)
+void rgbw_set_power(unsigned char state)
 {
     for (enum channel chnl = AUX_W; chnl <= AUX_B; chnl++) {
-        ledc_set_duty(LEDC_LOW_SPEED_MODE, chnl, 255 * state);
+        ledc_set_duty(LEDC_LOW_SPEED_MODE, chnl, state);
         ledc_update_duty(LEDC_LOW_SPEED_MODE, chnl);
+    }
+}
+
+void set_rgbw_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
+{
+
+    if(message->attribute.data.value) {
+        bool on_off = *(bool *)message->attribute.data.value;
+        if(on_off == false) {
+            rgbw_set_power(0);
+        }
+        else {
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, r_level);
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_G, g_level);
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_B, b_level);
+        }
+        ESP_LOGI(TAG, "Light sets to %s", on_off ? "On" : "Off");
     }
 }
 

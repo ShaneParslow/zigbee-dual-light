@@ -26,7 +26,7 @@ static void white_endpoint_attr_handler(const esp_zb_zcl_set_attr_value_message_
             if (message->attribute.id == ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_BOOL) {
                 light_state = message->attribute.data.value ? *(bool *)message->attribute.data.value : light_state;
                 ESP_LOGI(TAG, "Light sets to %s", light_state ? "On" : "Off");
-                white_light_set_power(light_state);
+                white_set_power(light_state);
             } else {
                 ESP_LOGW(TAG, "On/Off cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
             }
@@ -75,6 +75,13 @@ static void white_endpoint_attr_handler(const esp_zb_zcl_set_attr_value_message_
 static void rgbw_endpoint_attr_handler(const esp_zb_zcl_set_attr_value_message_t *message)
 {
     switch (message->info.cluster) {
+        case ESP_ZB_ZCL_CLUSTER_ID_ON_OFF:
+            if (message->attribute.id == ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_BOOL) {
+                set_rgbw_on_off(message);
+            } else {
+                ESP_LOGW(TAG, "On/Off cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
+            }
+            break;
         default:
             ESP_LOGI(TAG, "Message data: cluster(0x%x), attribute(0x%x)  ", message->info.cluster, message->attribute.id);
             break;
