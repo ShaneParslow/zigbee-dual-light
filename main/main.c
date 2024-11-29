@@ -17,75 +17,66 @@ static const char *TAG = "ZB_DUAL_LIGHT";
 #define ESP_ZB_PRIMARY_CHANNEL_MASK       ESP_ZB_TRANSCEIVER_ALL_CHANNELS_MASK  /* Zigbee primary channel mask use in the example */
 
 
+// nested cases are a bit messier than I thought...
 static void white_endpoint_attr_handler(const esp_zb_zcl_set_attr_value_message_t *message)
 {
-        switch (message->info.cluster) {
-        case ESP_ZB_ZCL_CLUSTER_ID_ON_OFF:
-            if (message->attribute.id == ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_BOOL) {
-                set_white_on_off(message);
-            } else {
-                ESP_LOGW(TAG, "On/Off cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
-            }
+    switch (message->info.cluster) {
+  
+    /* OnOff cluster attributes */
+    case ESP_ZB_ZCL_CLUSTER_ID_ON_OFF:
+        switch (message->attribute.id) {
+        case ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID:
+            set_white_on_off(message);
             break;
         default:
-            ESP_LOGI(TAG, "Message data: cluster(0x%x), attribute(0x%x)  ", message->info.cluster, message->attribute.id);
+            ESP_LOGW(TAG, "On/Off cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
             break;
-    }
+        }
+        break;
 
-        /*
-        case ESP_ZB_ZCL_CLUSTER_ID_COLOR_CONTROL:
-            if (message->attribute.id == ESP_ZB_ZCL_ATTR_COLOR_CONTROL_CURRENT_X_ID && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U16) {
-                light_color_x = message->attribute.data.value ? *(uint16_t *)message->attribute.data.value : light_color_x;
-                light_color_y = *(uint16_t *)esp_zb_zcl_get_attribute(message->info.dst_endpoint, message->info.cluster,
-                                                                      ESP_ZB_ZCL_CLUSTER_SERVER_ROLE, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_CURRENT_Y_ID)
-                                     ->data_p;
-                ESP_LOGI(TAG, "Light color x changes to 0x%x", light_color_x);
-            } else if (message->attribute.id == ESP_ZB_ZCL_ATTR_COLOR_CONTROL_CURRENT_Y_ID &&
-                       message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U16) {
-                light_color_y = message->attribute.data.value ? *(uint16_t *)message->attribute.data.value : light_color_y;
-                light_color_x = *(uint16_t *)esp_zb_zcl_get_attribute(message->info.dst_endpoint, message->info.cluster,
-                                                                      ESP_ZB_ZCL_CLUSTER_SERVER_ROLE, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_CURRENT_X_ID)
-                                     ->data_p;
-                ESP_LOGI(TAG, "Light color y changes to 0x%x", light_color_y);
-            } else {
-                ESP_LOGW(TAG, "Color control cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
-            }
-            //light_driver_set_color_xy(light_color_x, light_color_y);
-            break;
-        */
-
-        /*
-        case ESP_ZB_ZCL_CLUSTER_ID_LEVEL_CONTROL:
-            if (message->attribute.id == ESP_ZB_ZCL_ATTR_LEVEL_CONTROL_CURRENT_LEVEL_ID && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U8) {
-                light_level = message->attribute.data.value ? *(uint8_t *)message->attribute.data.value : light_level;
-                //light_driver_set_level((uint8_t)light_level);
-                ESP_LOGI(TAG, "Light level changes to %d", light_level);
-            } else {
-                ESP_LOGW(TAG, "Level Control cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
-            }
-            break;
-        
-
+    /* Color attributes (todo) */
+    case ESP_ZB_ZCL_CLUSTER_ID_COLOR_CONTROL:
+        switch (message->attribute.id) {
         default:
-            ESP_LOGI(TAG, "Message data: cluster(0x%x), attribute(0x%x)  ", message->info.cluster, message->attribute.id);
+            ESP_LOGW(TAG, "Color cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
+                break;
+            }
             break;
+
+    default:
+        ESP_LOGI(TAG, "Message data: cluster(0x%x), attribute(0x%x)  ", message->info.cluster, message->attribute.id);
+        break;
     }
-    */
 }
 
 static void rgbw_endpoint_attr_handler(const esp_zb_zcl_set_attr_value_message_t *message)
 {
     switch (message->info.cluster) {
-        case ESP_ZB_ZCL_CLUSTER_ID_ON_OFF:
-            if (message->attribute.id == ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_BOOL) {
-                set_rgbw_on_off(message);
-            } else {
-                ESP_LOGW(TAG, "On/Off cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
-            }
+  
+    /* OnOff cluster attributes */
+    case ESP_ZB_ZCL_CLUSTER_ID_ON_OFF:
+        switch (message->attribute.id) {
+        case ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID:
+            set_rgbw_on_off(message);
             break;
         default:
-            ESP_LOGI(TAG, "Message data: cluster(0x%x), attribute(0x%x)  ", message->info.cluster, message->attribute.id);
+            ESP_LOGW(TAG, "On/Off cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
             break;
+        }
+        break;
+
+    /* Color attributes (todo) */
+    case ESP_ZB_ZCL_CLUSTER_ID_COLOR_CONTROL:
+        switch (message->attribute.id) {
+        default:
+            ESP_LOGW(TAG, "Color cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
+                break;
+            }
+            break;
+
+    default:
+        ESP_LOGI(TAG, "Message data: cluster(0x%x), attribute(0x%x)  ", message->info.cluster, message->attribute.id);
+        break;
     }
 }
 
