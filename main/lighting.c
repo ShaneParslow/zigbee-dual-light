@@ -85,6 +85,10 @@ void set_rgbw_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
             ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, r_level);
             ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_G, g_level);
             ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_B, b_level);
+
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_R);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_G);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_B);
         }
         ESP_LOGI(TAG, "Light sets to %s", on_off ? "On" : "Off");
     }
