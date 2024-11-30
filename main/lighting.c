@@ -147,9 +147,9 @@ static void update_rgbw()
 
 update_leds:
     w_final = w < 1 ? round(w * 255.0) : 255;
-    r_final = r < 1 ? round(w * 255.0) : 255;
-    g_final = g < 1 ? round(w * 255.0) : 255;
-    b_final = b < 1 ? round(w * 255.0) : 255;
+    r_final = r < 1 ? round(r * 255.0) : 255;
+    g_final = g < 1 ? round(g * 255.0) : 255;
+    b_final = b < 1 ? round(b * 255.0) : 255;
     
     ESP_LOGI(TAG, "RGBW: %hhu %hhu %hhu %hhu", r_final, g_final, b_final, w_final);
 
