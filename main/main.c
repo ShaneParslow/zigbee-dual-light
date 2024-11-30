@@ -65,9 +65,27 @@ static void rgbw_endpoint_attr_handler(const esp_zb_zcl_set_attr_value_message_t
         }
         break;
 
-    /* Color attributes (todo) */
+    /* Level control attributes */
+    case ESP_ZB_ZCL_CLUSTER_ID_LEVEL_CONTROL:
+        switch (message->attribute.id) {
+        case ESP_ZB_ZCL_ATTR_LEVEL_CONTROL_CURRENT_LEVEL_ID:
+                set_rgbw_level(message);
+                break;
+        default:
+            ESP_LOGW(TAG, "Level cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
+            break;
+        }
+        break;
+    
+    /* Color attributes */
     case ESP_ZB_ZCL_CLUSTER_ID_COLOR_CONTROL:
         switch (message->attribute.id) {
+        case ESP_ZB_ZCL_ATTR_COLOR_CONTROL_CURRENT_X_ID:
+            set_rgbw_x(message);
+            break;
+        case ESP_ZB_ZCL_ATTR_COLOR_CONTROL_CURRENT_Y_ID:
+            set_rgbw_y(message);
+            break;
         default:
             ESP_LOGW(TAG, "Color cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
                 break;

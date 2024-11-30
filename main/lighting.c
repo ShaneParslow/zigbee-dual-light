@@ -14,16 +14,23 @@ const static gpio_num_t pin_map[NUM_LIGHTS] = {
     [AUX_B]     = GPIO_NUM_4,
 };
 
-/* Track level, even when the light gets turned off so that we can restore it.
+/* Save the luminance/level of the lights. The color/temp needs to be scaled by this, which is a todo */
+static uint8_t white_level  = 0xfe;
+static uint8_t rgbw_level   = 0xfe;
+
+/* Saved chromaticity */
+static uint16_t white_temp = 0;
+static uint16_t rgbw_x = ESP_ZB_ZCL_COLOR_CONTROL_CURRENT_X_DEF_VALUE;
+static uint16_t rgbw_y = ESP_ZB_ZCL_COLOR_CONTROL_CURRENT_Y_DEF_VALUE;
+
+/* Save levels, even when the light gets turned off so that we can restore it.
     Technically, we are supposed to be using the StartupOnOff attribute but I
     don't think home assistant is going to care if this implementation is
     broken, based on what messages it's been sending. I havent seen anything
     addressed to the StartupOnOff attribute. Still, broken implementation. */
-static unsigned char cool_level =  0xfe;
-static unsigned char warm_level =  0xfe;
-static unsigned char r_level    =  0xfe;
-static unsigned char g_level    =  0xfe;
-static unsigned char b_level    =  0xfe;
+/* todo: remove in favor of saving levels and x/y/temp. From that, these can be calculated */
+static unsigned char cool_level = 0xfe;
+static unsigned char warm_level = 0xfe;
 
 static void timer_init()
 {
@@ -57,7 +64,7 @@ static void all_channels_init()
     }
 }
 
-void white_set_power(unsigned char state)
+void white_set_power(uint8_t state)
 {
     for (enum channel chnl = MAIN_COOL; chnl <= MAIN_WARM; chnl++) {
         ledc_set_duty(LEDC_LOW_SPEED_MODE, chnl, state);
@@ -65,7 +72,7 @@ void white_set_power(unsigned char state)
     }
 }
 
-void rgbw_set_power(unsigned char state)
+void rgbw_set_power(uint8_t state)
 {
     for (enum channel chnl = AUX_W; chnl <= AUX_B; chnl++) {
         ledc_set_duty(LEDC_LOW_SPEED_MODE, chnl, state);
@@ -76,7 +83,7 @@ void rgbw_set_power(unsigned char state)
 void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
 {
 
-    if(message->attribute.data.value) {
+    if(message->attribute.data.value && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_BOOL) {
         bool on_off = *(bool *)message->attribute.data.value;
         if(on_off == false) {
             white_set_power(0);
@@ -90,26 +97,114 @@ void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
         }
         ESP_LOGI(TAG, "White set to %s", on_off ? "On" : "Off");
     }
+    else {
+        ESP_LOGI(TAG, "Invalid OnOff data and/or type");
+    }
+}
+
+static void update_rgbw()
+{
+    // longs to give us some room to work with
+    long w, r, g, b;
+    long X, Y, Z;
+
+    // These equations blow up at y = 0;
+    if (rgbw_y == 0) {
+        w = r = g = b = 0;
+        goto update_leds;
+    }
+
+    // okay, so we are working with cie xyY color space. that means we have chromaticity with x and y, and luminance with Y.
+    // xy defines the ratio of r/g/b. Y defines the intensity of the light, and is taken directly from the level setting.
+    // Y can directly set W, and should probably also scale r/g/b
+    // in order to make sure that the colors aren't washed out by the white, we should probably max r/g/b at 50% and then start fading in the white.
+
+    /* Start fading W in at half luminance */
+    //w = (rgbw_level - 127) * 2;
+    //w = w > 0 ? w : 0;
+    w = 0; // temp, TODO: limit luminance value for rgb calculations so that it doesn't start getting washed out. also should help save on power budget.
+    // wait. we can just make r/g/b not depend on Y (luminance) in the matrix and do luminance *solely* with w. that should help a lot with the power budget. gotta test.
+
+    /* Conversion from xyY to XYZ. Mind the capital vs lowercase y's */
+    /* Capital is luminance in both xyY and XYZ. Lower case is part of chromaticity in xyY */
+    // https://en.wikipedia.org/wiki/CIE_1931_color_space#CIE_xy_chromaticity_diagram_and_the_CIE_xyY_color_space
+    Y = rgbw_level * 256; // level is 8 bits and everything here is on a 16 bit scale
+    X = (rgbw_x * Y) / rgbw_y;
+    Z = (Y / rgbw_y) * (1 - rgbw_x - rgbw_y);
+
+    /* XYZ to rgb matrix transform (using int mul/div) */
+    // https://en.wikipedia.org/wiki/CIE_1931_color_space#Construction_of_the_CIE_XYZ_color_space_from_the_Wright%E2%80%93Guild_data
+    r = ((X * M11) + (Y * M12) + (Z * M13)) / MDIV;
+    g = ((X * M21) + (Y * M22) + (Z * M23)) / MDIV;
+    b = ((X * M31) + (Y * M32) + (Z * M33)) / MDIV;
+
+    /* Back down to 8 bit */
+    r = r / 256;
+    g = g / 256;
+    b = b / 256;
+
+    ESP_LOGI(TAG, "XYZ: %ld %ld %ld  RGB: %ld %ld %ld", X, Y, Z, r, g, b);
+
+update_leds:
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, w);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, r);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_G, g);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_B, b);
+
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_W);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_R);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_G);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_B);
 }
 
 void set_rgbw_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
 {
 
-    if(message->attribute.data.value) {
+    if(message->attribute.data.value && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_BOOL) {
         bool on_off = *(bool *)message->attribute.data.value;
         if(on_off == false) {
             rgbw_set_power(0);
         }
         else {
-            ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, r_level);
-            ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_G, g_level);
-            ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_B, b_level);
-
-            ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_R);
-            ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_G);
-            ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_B);
+            update_rgbw();
         }
         ESP_LOGI(TAG, "RGBW set to %s", on_off ? "On" : "Off");
+    }
+    else {
+        ESP_LOGI(TAG, "Invalid OnOff data and/or type");
+    }
+}
+
+void set_rgbw_level(const esp_zb_zcl_set_attr_value_message_t *message)
+{
+    if(message->attribute.data.value && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U8) {
+        rgbw_level = *(uint8_t*)message->attribute.data.value;
+        update_rgbw();
+    }
+    else {
+        ESP_LOGI(TAG, "Invalid Level data and/or type");
+    }
+}
+
+void set_rgbw_x(const esp_zb_zcl_set_attr_value_message_t *message)
+{
+    if(message->attribute.data.value && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U16) {
+        rgbw_x = *(uint8_t*)message->attribute.data.value;
+        update_rgbw();
+    }
+    else {
+        ESP_LOGI(TAG, "Invalid Color data and/or type");
+    }
+}
+
+void set_rgbw_y(const esp_zb_zcl_set_attr_value_message_t *message)
+{
+    if(message->attribute.data.value && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U16) {
+        rgbw_y = *(uint8_t*)message->attribute.data.value;
+        update_rgbw();
+    }
+    else {
+        ESP_LOGI(TAG, "Invalid Color data and/or type");
     }
 }
 
