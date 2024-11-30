@@ -122,9 +122,9 @@ esp_zb_color_dimmable_light_cfg_t rgbw_cluster_cfg =
         {
             .current_x = ESP_ZB_ZCL_COLOR_CONTROL_CURRENT_X_DEF_VALUE,
             .current_y = ESP_ZB_ZCL_COLOR_CONTROL_CURRENT_Y_DEF_VALUE,
-            .color_mode = COLOR_MODE_XY,
+            .color_mode = COLOR_MODE_HUESAT,
             .options = ESP_ZB_ZCL_COLOR_CONTROL_OPTIONS_DEFAULT_VALUE,
-            .enhanced_color_mode = COLOR_MODE_XY,
+            .enhanced_color_mode = COLOR_MODE_HUESAT,
             .color_capabilities = HUESAT_SUPPORTED | ENHANCEDHUE_SUPPORTED | COLORLOOP_SUPPORTED | XYATTRS_SUPPORTED, // mandatory value by spec
         },
 };
