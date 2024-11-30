@@ -106,9 +106,9 @@ static void update_rgbw()
 {
     // Floats are actually required because the xyY to XYZ has some terms that get quite close to 1 and I don't want to add in magic coefficients for fixed point arithmetic
     // Also the equation for xyY to XYZ is for normalized variables, but I'm pretty sure I could get past that by switching out the 1 with a UINT16_MAX.
-    float x = rgbw_x / UINT16_MAX;
-    float y = rgbw_y / UINT16_MAX;
-    float Y = rgbw_level / UINT8_MAX;
+    float x = (float)rgbw_x / (float)UINT16_MAX;
+    float y = (float)rgbw_y / (float)UINT16_MAX;
+    float Y = (float)rgbw_level / (float)UINT8_MAX;
     float X, Z;
     float w, r, g, b;
     uint8_t r_final, g_final, b_final, w_final;
