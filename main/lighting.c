@@ -105,8 +105,11 @@ void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
 static void update_rgbw()
 {
     // longs to give us some room to work with
+    long x = rgbw_x
+    long y = rgbw_y;
+    long Y = rgbw_level * 256; // level is 8 bits and everything here is on a 16 bit scale
+    long X, Z;
     long w, r, g, b;
-    long X, Y, Z;
 
     // These equations blow up at y = 0;
     if (rgbw_y == 0) {
@@ -128,7 +131,6 @@ static void update_rgbw()
     /* Conversion from xyY to XYZ. Mind the capital vs lowercase y's */
     /* Capital is luminance in both xyY and XYZ. Lower case is part of chromaticity in xyY */
     // https://en.wikipedia.org/wiki/CIE_1931_color_space#CIE_xy_chromaticity_diagram_and_the_CIE_xyY_color_space
-    Y = rgbw_level * 256; // level is 8 bits and everything here is on a 16 bit scale
     X = (rgbw_x * Y) / rgbw_y;
     Z = (Y / rgbw_y) * (1 - rgbw_x - rgbw_y);
 
@@ -143,7 +145,7 @@ static void update_rgbw()
     g = g / 256;
     b = b / 256;
 
-    ESP_LOGI(TAG, "XYZ: %ld %ld %ld  RGB: %ld %ld %ld", X, Y, Z, r, g, b);
+    ESP_LOGI(TAG, "xy: %ld %ld  XYZ: %ld %ld %ld  RGB: %ld %ld %ld", x, y, X, Y, Z, r, g, b);
 
 update_leds:
     ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, w);
