@@ -104,12 +104,14 @@ void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
 
 static void update_rgbw()
 {
-    // longs to give us some room to work with
-    long x = rgbw_x;
-    long y = rgbw_y;
-    long Y = rgbw_level * 256; // level is 8 bits and everything here is on a 16 bit scale
-    long X, Z;
-    long w, r, g, b;
+    // Floats are actually required because the xyY to XYZ has some terms that get quite close to 1 and I don't want to add in magic coefficients for fixed point arithmetic
+    // Also the equation for xyY to XYZ is for normalized variables, but I'm pretty sure I could get past that by switching out the 1 with a UINT16_MAX.
+    float x = rgbw_x / UINT16_MAX;
+    float y = rgbw_y / UINT16_MAX;
+    float Y = rgbw_level / UINT8_MAX;
+    float X, Z;
+    float w, r, g, b;
+    uint8_t r_final, g_final, b_final, w_final;
 
     // These equations blow up at y = 0;
     if (rgbw_y == 0) {
@@ -131,8 +133,8 @@ static void update_rgbw()
     /* Conversion from xyY to XYZ. Mind the capital vs lowercase y's */
     /* Capital is luminance in both xyY and XYZ. Lower case is part of chromaticity in xyY */
     // https://en.wikipedia.org/wiki/CIE_1931_color_space#CIE_xy_chromaticity_diagram_and_the_CIE_xyY_color_space
-    X = (rgbw_x * Y) / rgbw_y;
-    Z = (Y / rgbw_y) * (1 - rgbw_x - rgbw_y);
+    X = (x * Y) / y;
+    Z = (Y / y) * (1 - x - y);
 
     /* XYZ to rgb matrix transform (using int mul/div) */
     // https://en.wikipedia.org/wiki/CIE_1931_color_space#Construction_of_the_CIE_XYZ_color_space_from_the_Wright%E2%80%93Guild_data
@@ -140,18 +142,20 @@ static void update_rgbw()
     g = ((X * M21) + (Y * M22) + (Z * M23)) / MDIV;
     b = ((X * M31) + (Y * M32) + (Z * M33)) / MDIV;
 
-    /* Back down to 8 bit */
-    r = r / 256;
-    g = g / 256;
-    b = b / 256;
-
-    ESP_LOGI(TAG, "xy: %ld %ld  XYZ: %ld %ld %ld  RGB: %ld %ld %ld", x, y, X, Y, Z, r, g, b);
+    
 
 update_leds:
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, w);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, r);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_G, g);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_B, b);
+    w_final = w * UINT8_MAX;
+    r_final = r * UINT8_MAX;
+    g_final = g * UINT8_MAX;
+    b_final = b * UINT8_MAX;
+
+    ESP_LOGI(TAG, "xy: %f %f  XYZ: %f %f %f  RGBW: %hhu %hhu %hhu %hhu", x, y, X, Y, Z, r_final, g_final, b_final, w_final);
+
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, w_final);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, r_final);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_G, g_final);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_B, b_final);
 
     ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_W);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, AUX_R);
