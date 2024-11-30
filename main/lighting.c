@@ -110,7 +110,7 @@ static void update_rgbw()
     float y = (float)rgbw_y / (float)UINT16_MAX;
     float Y = (float)rgbw_level;
     float X, Z;
-    float r, g, b;
+    float r, g, b, w;
     uint8_t r_final, g_final, b_final, w_final;
 
     // These equations blow up at y = 0;
