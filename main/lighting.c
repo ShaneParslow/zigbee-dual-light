@@ -108,14 +108,14 @@ static void update_rgbw()
     // Also the equation for xyY to XYZ is for normalized variables, but I'm pretty sure I could get past that by switching out the 1 with a UINT16_MAX.
     float x = (float)rgbw_x / (float)UINT16_MAX;
     float y = (float)rgbw_y / (float)UINT16_MAX;
-    float Y = (float)rgbw_level;
+    float Y = (float)rgbw_level / (float)UINT8_MAX;
     float X, Z;
     float r, g, b, w;
     uint8_t r_final, g_final, b_final, w_final;
 
     // These equations blow up at y = 0;
     if (rgbw_y == 0) {
-        w_final = r = g = b = 0;
+        w = r = g = b = 0;
         goto update_leds;
     }
 
