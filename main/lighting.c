@@ -153,7 +153,7 @@ update_leds:
     
     ESP_LOGI(TAG, "RGBW: %hhu %hhu %hhu %hhu", r_final, g_final, b_final, w_final);
 
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, w_final);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_W, w_final);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, r_final);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_G, g_final);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_B, b_final);
