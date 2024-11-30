@@ -125,6 +125,7 @@ esp_zb_color_dimmable_light_cfg_t rgbw_cluster_cfg =
             .color_mode = COLOR_MODE_HUESAT,
             .options = ESP_ZB_ZCL_COLOR_CONTROL_OPTIONS_DEFAULT_VALUE,
             .enhanced_color_mode = COLOR_MODE_HUESAT,
-            .color_capabilities = HUESAT_SUPPORTED | ENHANCEDHUE_SUPPORTED | COLORLOOP_SUPPORTED | XYATTRS_SUPPORTED, // mandatory value by spec
+            /* by spec this is also supposed to support x/y color, but I don't want to implement that right now and the stack is unhappy if it's marked supported when it isn't */
+            .color_capabilities = HUESAT_SUPPORTED | COLORLOOP_SUPPORTED,
         },
 };
