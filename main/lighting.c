@@ -108,14 +108,14 @@ static void update_rgbw()
     // Also the equation for xyY to XYZ is for normalized variables, but I'm pretty sure I could get past that by switching out the 1 with a UINT16_MAX.
     float x = (float)rgbw_x / (float)UINT16_MAX;
     float y = (float)rgbw_y / (float)UINT16_MAX;
-    float Y = (float)rgbw_level / (float)UINT8_MAX;
+    float Y = (float)rgbw_level;
     float X, Z;
-    float w, r, g, b;
+    float r, g, b;
     uint8_t r_final, g_final, b_final, w_final;
 
     // These equations blow up at y = 0;
     if (rgbw_y == 0) {
-        w = r = g = b = 0;
+        w_final = r = g = b = 0;
         goto update_leds;
     }
 
@@ -125,8 +125,8 @@ static void update_rgbw()
     // in order to make sure that the colors aren't washed out by the white, we should probably max r/g/b at 50% and then start fading in the white.
 
     /* Start fading W in at half luminance */
-    //w = (rgbw_level - 127) * 2;
-    //w = w > 0 ? w : 0;
+    //int w = (rgbw_level - 127) * 2;
+    //w_final = w > 0 ? w : 0;
     w = 0; // temp, TODO: limit luminance value for rgb calculations so that it doesn't start getting washed out. also should help save on power budget.
     // wait. we can just make r/g/b not depend on Y (luminance) in the matrix and do luminance *solely* with w. that should help a lot with the power budget. gotta test.
 
@@ -136,19 +136,20 @@ static void update_rgbw()
     X = (x * Y) / y;
     Z = (Y / y) * (1 - x - y);
 
-    /* XYZ to rgb matrix transform (using int mul/div) */
+    /* XYZ to srgb matrix transform */
     // https://en.wikipedia.org/wiki/CIE_1931_color_space#Construction_of_the_CIE_XYZ_color_space_from_the_Wright%E2%80%93Guild_data
-    r = ((X * M11) + (Y * M12) + (Z * M13)) / MDIV;
-    g = ((X * M21) + (Y * M22) + (Z * M23)) / MDIV;
-    b = ((X * M31) + (Y * M32) + (Z * M33)) / MDIV;
+    // https://www.oceanopticsbook.info/view/photometry-and-visibility/from-xyz-to-rgb
+    r = ((X * M11) + (Y * M12) + (Z * M13));
+    g = ((X * M21) + (Y * M22) + (Z * M23));
+    b = ((X * M31) + (Y * M32) + (Z * M33));
 
     ESP_LOGI(TAG, "xy: %f %f  XYZ: %f %f %f", x, y, X, Y, Z);
 
 update_leds:
-    w_final = w * UINT8_MAX;
-    r_final = r * UINT8_MAX;
-    g_final = g * UINT8_MAX;
-    b_final = b * UINT8_MAX;
+    w_final = w;
+    r_final = r;
+    g_final = g;
+    b_final = b;
     
     ESP_LOGI(TAG, "RGBW: %hhu %hhu %hhu %hhu", r_final, g_final, b_final, w_final);
 

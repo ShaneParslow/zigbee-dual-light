@@ -14,16 +14,15 @@ enum channel {
 // https://en.wikipedia.org/wiki/CIE_1931_color_space#Construction_of_the_CIE_XYZ_color_space_from_the_Wright%E2%80%93Guild_data
 // The actual values listed there would overflow, so just chop off the last 3 digits
 // (longs are 32 bits, the largest possible number would be a ~65k int16 * ~8M matrix constant = ~512B)
-#define M11  8042
-#define M12 -3049
-#define M13 -1592
-#define M21 -1752
-#define M22  4851
-#define M23  302
-#define M31  18
-#define M32 -49
-#define M33  3432
-#define MDIV 3401
+#define M11  3.2404542
+#define M12 -1.5371385
+#define M13 -0.4985314
+#define M21 -0.9692660
+#define M22  1.8760108
+#define M23  0.0415560
+#define M31  0.0556534
+#define M32 -0.2040259
+#define M33  1.0572252
 
 void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message);
 void set_rgbw_on_off(const esp_zb_zcl_set_attr_value_message_t *message);
