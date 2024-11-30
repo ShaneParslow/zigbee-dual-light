@@ -106,11 +106,11 @@ static void update_rgbw()
 {
     // Floats are actually required because the xyY to XYZ has some terms that get quite close to 1 and I don't want to add in magic coefficients for fixed point arithmetic
     // Also the equation for xyY to XYZ is for normalized variables, but I'm pretty sure I could get past that by switching out the 1 with a UINT16_MAX.
-    float x = (float)rgbw_x / (float)UINT16_MAX;
-    float y = (float)rgbw_y / (float)UINT16_MAX;
-    float Y = (float)rgbw_level / (float)UINT8_MAX;
-    float X, Z;
-    float r, g, b, w;
+    double x = (double)rgbw_x / (double)UINT16_MAX;
+    double y = (double)rgbw_y / (double)UINT16_MAX;
+    double Y = (double)rgbw_level / (double)UINT8_MAX;
+    double X, Z;
+    double r, g, b, w;
     uint8_t r_final, g_final, b_final, w_final;
 
     // These equations blow up at y = 0;
@@ -146,10 +146,10 @@ static void update_rgbw()
     ESP_LOGI(TAG, "xy: %f %f  XYZ: %f %f %f", x, y, X, Y, Z);
 
 update_leds:
-    w_final = w;
-    r_final = r;
-    g_final = g;
-    b_final = b;
+    w_final = w < 1 ? round(w * 255.0) : 255;
+    r_final = r < 1 ? round(w * 255.0) : 255;
+    g_final = g < 1 ? round(w * 255.0) : 255;
+    b_final = b < 1 ? round(w * 255.0) : 255;
     
     ESP_LOGI(TAG, "RGBW: %hhu %hhu %hhu %hhu", r_final, g_final, b_final, w_final);
 
