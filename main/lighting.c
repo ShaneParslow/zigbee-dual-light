@@ -105,7 +105,7 @@ void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
 static void update_rgbw()
 {
     // longs to give us some room to work with
-    long x = rgbw_x
+    long x = rgbw_x;
     long y = rgbw_y;
     long Y = rgbw_level * 256; // level is 8 bits and everything here is on a 16 bit scale
     long X, Z;
