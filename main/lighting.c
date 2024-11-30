@@ -189,7 +189,7 @@ void set_rgbw_level(const esp_zb_zcl_set_attr_value_message_t *message)
 void set_rgbw_x(const esp_zb_zcl_set_attr_value_message_t *message)
 {
     if(message->attribute.data.value && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U16) {
-        rgbw_x = *(uint8_t*)message->attribute.data.value;
+        rgbw_x = *(uint16_t*)message->attribute.data.value;
         update_rgbw();
     }
     else {
@@ -200,7 +200,7 @@ void set_rgbw_x(const esp_zb_zcl_set_attr_value_message_t *message)
 void set_rgbw_y(const esp_zb_zcl_set_attr_value_message_t *message)
 {
     if(message->attribute.data.value && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U16) {
-        rgbw_y = *(uint8_t*)message->attribute.data.value;
+        rgbw_y = *(uint16_t*)message->attribute.data.value;
         update_rgbw();
     }
     else {
