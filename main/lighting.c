@@ -142,15 +142,15 @@ static void update_rgbw()
     g = ((X * M21) + (Y * M22) + (Z * M23)) / MDIV;
     b = ((X * M31) + (Y * M32) + (Z * M33)) / MDIV;
 
-    
+    ESP_LOGI(TAG, "xy: %f %f  XYZ: %f %f %f", x, y, X, Y, Z);
 
 update_leds:
     w_final = w * UINT8_MAX;
     r_final = r * UINT8_MAX;
     g_final = g * UINT8_MAX;
     b_final = b * UINT8_MAX;
-
-    ESP_LOGI(TAG, "xy: %f %f  XYZ: %f %f %f  RGBW: %hhu %hhu %hhu %hhu", x, y, X, Y, Z, r_final, g_final, b_final, w_final);
+    
+    ESP_LOGI(TAG, "RGBW: %hhu %hhu %hhu %hhu", r_final, g_final, b_final, w_final);
 
     ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, w_final);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, AUX_R, r_final);
