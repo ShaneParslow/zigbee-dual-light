@@ -113,11 +113,12 @@ static void update_rgbw()
     double r, g, b, w;
     uint8_t r_final, g_final, b_final, w_final;
 
+    // test: seeing if this is necessary
     // These equations blow up at y = 0;
-    if (rgbw_y == 0) {
-        w = r = g = b = 0;
-        goto update_leds;
-    }
+    //if (rgbw_y == 0) {
+    //   w = r = g = b = 0;
+    //   goto update_leds;
+    //}
 
     // okay, so we are working with cie xyY color space. that means we have chromaticity with x and y, and luminance with Y.
     // xy defines the ratio of r/g/b. Y defines the intensity of the light, and is taken directly from the level setting.
@@ -134,7 +135,7 @@ static void update_rgbw()
     /* Capital is luminance in both xyY and XYZ. Lower case is part of chromaticity in xyY */
     // https://en.wikipedia.org/wiki/CIE_1931_color_space#CIE_xy_chromaticity_diagram_and_the_CIE_xyY_color_space
     X = (x * Y) / y;
-    Z = (Y / y) * (1 - x - y);
+    Z = (Y / y) * (1.0 - x - y);
 
     /* XYZ to srgb matrix transform */
     // https://en.wikipedia.org/wiki/CIE_1931_color_space#Construction_of_the_CIE_XYZ_color_space_from_the_Wright%E2%80%93Guild_data

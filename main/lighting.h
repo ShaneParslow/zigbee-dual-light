@@ -12,8 +12,6 @@ enum channel {
 
 /* Matrix constants for XYZ to rgb */
 // https://en.wikipedia.org/wiki/CIE_1931_color_space#Construction_of_the_CIE_XYZ_color_space_from_the_Wright%E2%80%93Guild_data
-// The actual values listed there would overflow, so just chop off the last 3 digits
-// (longs are 32 bits, the largest possible number would be a ~65k int16 * ~8M matrix constant = ~512B)
 #define M11  3.2404542
 #define M12 -1.5371385
 #define M13 -0.4985314
