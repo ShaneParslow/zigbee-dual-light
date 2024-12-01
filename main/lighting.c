@@ -102,6 +102,7 @@ void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
     }
 }
 
+/* Set rgbw from saved values of x, y, and level. */
 static void update_rgbw()
 {
     // Floats are actually required because the xyY to XYZ has some terms that get quite close to 1 and I don't want to add in magic coefficients for fixed point arithmetic
@@ -110,26 +111,8 @@ static void update_rgbw()
     double y = (double)rgbw_y / (double)UINT16_MAX;
     double Y = (double)rgbw_level / (double)UINT8_MAX;
     double X, Z;
-    double r, g, b, w;
+    double r, g, b;
     uint8_t r_final, g_final, b_final, w_final;
-
-    // test: seeing if this is necessary
-    // These equations blow up at y = 0;
-    //if (rgbw_y == 0) {
-    //   w = r = g = b = 0;
-    //   goto update_leds;
-    //}
-
-    // okay, so we are working with cie xyY color space. that means we have chromaticity with x and y, and luminance with Y.
-    // xy defines the ratio of r/g/b. Y defines the intensity of the light, and is taken directly from the level setting.
-    // Y can directly set W, and should probably also scale r/g/b
-    // in order to make sure that the colors aren't washed out by the white, we should probably max r/g/b at 50% and then start fading in the white.
-
-    /* Start fading W in at half luminance */
-    //int w = (rgbw_level - 127) * 2;
-    //w_final = w > 0 ? w : 0;
-    w = 0; // temp, TODO: limit luminance value for rgb calculations so that it doesn't start getting washed out. also should help save on power budget.
-    // wait. we can just make r/g/b not depend on Y (luminance) in the matrix and do luminance *solely* with w. that should help a lot with the power budget. gotta test.
 
     /* Conversion from xyY to XYZ. Mind the capital vs lowercase y's */
     /* Capital is luminance in both xyY and XYZ. Lower case is part of chromaticity in xyY */
@@ -146,11 +129,19 @@ static void update_rgbw()
 
     ESP_LOGI(TAG, "xy: %f %f  XYZ: %f %f %f", x, y, X, Y, Z);
 
-update_leds:
-    w_final = w < 1 ? round(w * 255.0) : 255;
     r_final = r < 1 ? round(r * 255.0) : 255;
     g_final = g < 1 ? round(g * 255.0) : 255;
     b_final = b < 1 ? round(b * 255.0) : 255;
+
+    /* Get the smallest of r/g/b, then subtract it from all components. */
+    /* This might be an okay way to determine the value of w? */
+    w_final = r_final;
+    w_final = g_final < w_final ? g_final : w_final;
+    w_final = b_final < w_final ? b_final : w_final;
+
+    r_final -= w_final;
+    g_final -= w_final;
+    b_final -= w_final;
     
     ESP_LOGI(TAG, "RGBW: %hhu %hhu %hhu %hhu", r_final, g_final, b_final, w_final);
 
