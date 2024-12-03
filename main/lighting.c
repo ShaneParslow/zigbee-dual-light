@@ -19,18 +19,9 @@ static uint8_t white_level  = 0xfe;
 static uint8_t rgbw_level   = 0xfe;
 
 /* Saved chromaticity */
-static uint16_t white_temp = 0;
+static uint16_t white_temp = 0; // mireds
 static uint16_t rgbw_x = ESP_ZB_ZCL_COLOR_CONTROL_CURRENT_X_DEF_VALUE;
 static uint16_t rgbw_y = ESP_ZB_ZCL_COLOR_CONTROL_CURRENT_Y_DEF_VALUE;
-
-/* Save levels, even when the light gets turned off so that we can restore it.
-    Technically, we are supposed to be using the StartupOnOff attribute but I
-    don't think home assistant is going to care if this implementation is
-    broken, based on what messages it's been sending. I havent seen anything
-    addressed to the StartupOnOff attribute. Still, broken implementation. */
-/* todo: remove in favor of saving levels and x/y/temp. From that, these can be calculated */
-static unsigned char cool_level = 0xfe;
-static unsigned char warm_level = 0xfe;
 
 static void timer_init()
 {
@@ -80,6 +71,28 @@ void rgbw_set_power(uint8_t state)
     }
 }
 
+static void update_white()
+{
+    // Default min/max for the esp32 stack is 0x0000 and 0xfeff
+    // For this i'll just fade between those two values
+    // I don't really care if this is that accurate because i'll just tweak it in the controller automations
+    uint8_t warm, cool;
+
+    double ratio;
+
+    ratio = (double)white_temp / (double)0xfeff;
+
+    // Simple fade between warm and cool leds
+    warm = ratio < 1 ? round(ratio * (double)white_level) : 255;
+    cool = 255 - warm;
+
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, MAIN_COOL, cool);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, MAIN_WARM, warm);
+
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, MAIN_COOL);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, MAIN_WARM);
+}
+
 void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
 {
 
@@ -89,11 +102,7 @@ void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
             white_set_power(0);
         }
         else {
-            ledc_set_duty(LEDC_LOW_SPEED_MODE, MAIN_COOL, cool_level);
-            ledc_set_duty(LEDC_LOW_SPEED_MODE, MAIN_WARM, warm_level);
-
-            ledc_update_duty(LEDC_LOW_SPEED_MODE, MAIN_COOL);
-            ledc_update_duty(LEDC_LOW_SPEED_MODE, MAIN_WARM);
+            update_white();
         }
         ESP_LOGI(TAG, "White set to %s", on_off ? "On" : "Off");
     }
@@ -102,7 +111,30 @@ void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message)
     }
 }
 
+void set_white_level(const esp_zb_zcl_set_attr_value_message_t *message)
+{
+    if(message->attribute.data.value && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U8) {
+        white_level = *(uint8_t*)message->attribute.data.value;
+        update_white();
+    }
+    else {
+        ESP_LOGI(TAG, "Invalid Level data and/or type");
+    }
+}
+
+void set_white_temp(const esp_zb_zcl_set_attr_value_message_t *message)
+{
+    if(message->attribute.data.value && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_U16) {
+        white_temp = *(uint16_t*)message->attribute.data.value;
+        update_white();
+    }
+    else {
+        ESP_LOGI(TAG, "Invalid Color data and/or type");
+    }
+}
+
 /* Set rgbw from saved values of x, y, and level. */
+// current issue is that scaling of the level is a bit rough. it is wayyyy too bright at like 20% and only starts to really drop off below that
 static void update_rgbw()
 {
     // Floats are actually required because the xyY to XYZ has some terms that get quite close to 1 and I don't want to add in magic coefficients for fixed point arithmetic

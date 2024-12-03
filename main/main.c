@@ -34,9 +34,24 @@ static void white_endpoint_attr_handler(const esp_zb_zcl_set_attr_value_message_
         }
         break;
 
+    /* Level control attributes */
+    case ESP_ZB_ZCL_CLUSTER_ID_LEVEL_CONTROL:
+        switch (message->attribute.id) {
+        case ESP_ZB_ZCL_ATTR_LEVEL_CONTROL_CURRENT_LEVEL_ID:
+            set_white_level(message);
+            break;
+        default:
+            ESP_LOGW(TAG, "Level cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
+            break;
+        }
+        break;
+
     /* Color attributes (todo) */
     case ESP_ZB_ZCL_CLUSTER_ID_COLOR_CONTROL:
         switch (message->attribute.id) {
+        case ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_TEMPERATURE_ID:
+            set_white_temp(message);
+            break;
         default:
             ESP_LOGW(TAG, "Color cluster data: attribute(0x%x), type(0x%x)", message->attribute.id, message->attribute.data.type);
                 break;
@@ -230,6 +245,7 @@ static void esp_zb_task(void *pvParameters)
     esp_zb_ep_list_t* endpoint_list = esp_zb_ep_list_create();
 
     /* White light endpoint init */
+    // Maybe add in ColorTempPhysicalMin/MaxMireds attr if we have issues from it not being specified.
     esp_zb_cluster_list_t* white_cluster_list = esp_zb_color_dimmable_light_clusters_create(&white_cluster_cfg);
     esp_zb_ep_list_add_ep(endpoint_list, white_cluster_list, white_endpoint_cfg);
 

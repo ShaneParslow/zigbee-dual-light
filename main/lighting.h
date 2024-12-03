@@ -23,6 +23,8 @@ enum channel {
 #define M33  1.0572252
 
 void set_white_on_off(const esp_zb_zcl_set_attr_value_message_t *message);
+void set_white_level(const esp_zb_zcl_set_attr_value_message_t *message);
+void set_white_temp(const esp_zb_zcl_set_attr_value_message_t *message);
 void set_rgbw_on_off(const esp_zb_zcl_set_attr_value_message_t *message);
 void set_rgbw_level(const esp_zb_zcl_set_attr_value_message_t *message);
 void set_rgbw_x(const esp_zb_zcl_set_attr_value_message_t *message);
