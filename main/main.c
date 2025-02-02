@@ -245,18 +245,27 @@ static void esp_zb_task(void *pvParameters)
     esp_zb_ep_list_t* endpoint_list = esp_zb_ep_list_create();
 
     /* White light endpoint init */
-    // Maybe add in ColorTempPhysicalMin/MaxMireds attr if we have issues from it not being specified.
-    esp_zb_cluster_list_t* white_cluster_list = esp_zb_color_dimmable_light_clusters_create(&white_cluster_cfg);
+    esp_zb_cluster_list_t *white_cluster_list = esp_zb_zcl_cluster_list_create();
+
+    // The boilerplate clusters_create function here doesn't work for color temperature lights. Gotta make it from scratch.
+    // Ikea light has Basic, Color, Diagnostic, GreenPowerProxy, Groups, Identify, LevelControl, LightLink, ManufacturerSpecificCluster(0xfc7c), OnOff, Ota, Scenes
+    // Zigbee lighting and occupancy says we *must* have Basic, Identify, Groups, Scense, On/Off, Level control, and Color control. So this is *broken*! Hopefully HA doesn't care that much.
+    esp_zb_attribute_list_t* attrs;
+    attrs = esp_zb_basic_cluster_create(&white_basic_cfg);
+    esp_zb_cluster_list_add_basic_cluster(white_cluster_list, attrs, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
+
     esp_zb_ep_list_add_ep(endpoint_list, white_cluster_list, white_endpoint_cfg);
 
+    /* RGBW light endpoint init */
+    // The boilerplate cluster layout and config works for the rgbw light
     esp_zb_cluster_list_t* rgbw_cluster_list = esp_zb_color_dimmable_light_clusters_create(&rgbw_cluster_cfg);
     esp_zb_ep_list_add_ep(endpoint_list, rgbw_cluster_list, rgbw_endpoint_cfg);
 
-    /* Add manufacturer info to the 'basic' cluster of this endpoint */
+    /* Add manufacturer info to the 'basic' cluster of these endpoints */
     basic_cluster_init_attributes(endpoint_list, WHITE_ENDPOINT);
     basic_cluster_init_attributes(endpoint_list, RGBW_ENDPOINT);
 
-    /* Register all endpoints. This takes a list, but right now we just have one endpoint. */
+    /* Register all endpoints. */
     esp_zb_device_register(endpoint_list);
 
     /* Action handler for actually handling certain incoming messages? What determines which things are static and which are dynamic through this handler? */

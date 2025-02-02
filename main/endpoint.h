@@ -80,6 +80,12 @@ esp_zb_color_dimmable_light_cfg_t white_cluster_cfg =
         },
 };
 
+esp_zb_basic_cluster_cfg_t white_basic_cfg =
+{
+    .zcl_version = ESP_ZB_ZCL_BASIC_ZCL_VERSION_DEFAULT_VALUE,
+    .power_source = ESP_ZB_ZCL_BASIC_POWER_SOURCE_DEFAULT_VALUE,
+};
+
 const esp_zb_endpoint_config_t rgbw_endpoint_cfg =
 {
     .endpoint = RGBW_ENDPOINT,
