@@ -249,10 +249,33 @@ static void esp_zb_task(void *pvParameters)
 
     // The boilerplate clusters_create function here doesn't work for color temperature lights. Gotta make it from scratch.
     // Ikea light has Basic, Color, Diagnostic, GreenPowerProxy, Groups, Identify, LevelControl, LightLink, ManufacturerSpecificCluster(0xfc7c), OnOff, Ota, Scenes
-    // Zigbee lighting and occupancy says we *must* have Basic, Identify, Groups, Scense, On/Off, Level control, and Color control. So this is *broken*! Hopefully HA doesn't care that much.
+    // Zigbee lighting and occupancy says we *must* have Basic, Identify, Groups, Scenes, On/Off, Level control, and Color control. So this is *broken*! Hopefully HA doesn't care that much.
+    // Also, all of these, and LOTS of other stuff throughout this code reserves the right to throw errors and we just ignore that. Im okay with that on my dumb little experimental light, though.
     esp_zb_attribute_list_t* attrs;
     attrs = esp_zb_basic_cluster_create(&white_basic_cfg);
     esp_zb_cluster_list_add_basic_cluster(white_cluster_list, attrs, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
+
+    attrs = esp_zb_on_off_cluster_create(&white_on_off_cfg);
+    esp_zb_cluster_list_add_on_off_cluster(white_cluster_list, attrs, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
+
+    attrs = esp_zb_level_cluster_create(&white_level_cfg);
+    esp_zb_cluster_list_add_level_cluster(white_cluster_list, attrs, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
+
+    // The docs arent explicit with what the lifetime of these needs to be. I've seen supposedly working examples where they're thrown out after the call to add_attr
+    // but the fact that it takes a pointer worries me. I think the pointer is just because it needs to be opaque.
+    uint16_t color_attr = ESP_ZB_ZCL_COLOR_CONTROL_COLOR_TEMPERATURE_DEF_VALUE;
+    uint16_t min_temp = ESP_ZB_ZCL_COLOR_CONTROL_COLOR_TEMP_PHYSICAL_MIN_MIREDS_DEFAULT_VALUE;
+    uint16_t max_temp = ESP_ZB_ZCL_COLOR_CONTROL_COLOR_TEMP_PHYSICAL_MAX_MIREDS_DEFAULT_VALUE;
+    uint8_t color_mode = COLOR_MODE_MIREDS;
+    uint8_t color_capabilities = COLORTEMP_SUPPORTED;
+
+    attrs = esp_zb_zcl_attr_list_create(ESP_ZB_ZCL_CLUSTER_ID_COLOR_CONTROL);
+    esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_MODE_ID, &color_mode);
+    esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_CAPABILITIES_ID, &color_capabilities);
+    esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_TEMPERATURE_ID, &color_attr);
+    esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_TEMP_PHYSICAL_MIN_MIREDS_ID, &min_temp);
+    esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_TEMP_PHYSICAL_MAX_MIREDS_ID, &max_temp);
+    esp_zb_cluster_list_add_color_control_cluster(white_cluster_list, attrs, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
 
     esp_zb_ep_list_add_ep(endpoint_list, white_cluster_list, white_endpoint_cfg);
 

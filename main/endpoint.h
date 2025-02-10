@@ -86,6 +86,16 @@ esp_zb_basic_cluster_cfg_t white_basic_cfg =
     .power_source = ESP_ZB_ZCL_BASIC_POWER_SOURCE_DEFAULT_VALUE,
 };
 
+esp_zb_on_off_cluster_cfg_t white_on_off_cfg =
+{
+    .on_off = ESP_ZB_ZCL_ON_OFF_ON_OFF_DEFAULT_VALUE,
+};
+
+esp_zb_level_cluster_cfg_t white_level_cfg =
+{
+    .current_level = ESP_ZB_ZCL_LEVEL_CONTROL_CURRENT_LEVEL_DEFAULT_VALUE,
+};
+
 const esp_zb_endpoint_config_t rgbw_endpoint_cfg =
 {
     .endpoint = RGBW_ENDPOINT,
