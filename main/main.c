@@ -267,10 +267,13 @@ static void esp_zb_task(void *pvParameters)
     uint16_t min_temp = ESP_ZB_ZCL_COLOR_CONTROL_COLOR_TEMP_PHYSICAL_MIN_MIREDS_DEFAULT_VALUE;
     uint16_t max_temp = ESP_ZB_ZCL_COLOR_CONTROL_COLOR_TEMP_PHYSICAL_MAX_MIREDS_DEFAULT_VALUE;
     uint8_t color_mode = COLOR_MODE_MIREDS;
+    uint8_t enhanced_color_mode = COLOR_MODE_MIREDS;
     uint8_t color_capabilities = COLORTEMP_SUPPORTED;
 
+    /* Pretty sure these arent all of the attrs required by spec, so once again *broken* */
     attrs = esp_zb_zcl_attr_list_create(ESP_ZB_ZCL_CLUSTER_ID_COLOR_CONTROL);
     esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_MODE_ID, &color_mode);
+    esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_ENHANCED_COLOR_MODE_ID, &enhanced_color_mode);
     esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_CAPABILITIES_ID, &color_capabilities);
     esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_TEMPERATURE_ID, &color_attr);
     esp_zb_color_control_cluster_add_attr(attrs, ESP_ZB_ZCL_ATTR_COLOR_CONTROL_COLOR_TEMP_PHYSICAL_MIN_MIREDS_ID, &min_temp);
